@@ -11,16 +11,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
 public class DiscodeitApplication {
-
     public static void main(String[] args) {
-        ConfigurableApplicationContext context = SpringApplication.run(DiscodeitApplication.class, args);
-
-        UserService userService = context.getBean(UserService.class);
-        ChannelService channelService = context.getBean(ChannelService.class);
-        MessageService messageService = context.getBean(MessageService.class);
-
-
-        System.out.println("서버가 정상적으로 실행되었습니다.");
+        SpringApplication.run(DiscodeitApplication.class, args);
     }
-
 }
