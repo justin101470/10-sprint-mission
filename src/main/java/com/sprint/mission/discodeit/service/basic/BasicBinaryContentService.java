@@ -27,14 +27,14 @@ public class BasicBinaryContentService implements BinaryContentService {
     }
 
     @Override
-    public BinaryContentResponseDto find(UUID id) {
+    public BinaryContentResponseDto findById(UUID id) {
         return binaryContentRepository.findById(id)
                 .map(this::convertToDto)
                 .orElseThrow(() -> new NoSuchElementException("파일을 찾을 수 없습니다."));
     }
 
     @Override
-    public List<BinaryContentResponseDto> findAllByIdIn(List<UUID> ids) {
+    public List<BinaryContentResponseDto> findAllByIds(List<UUID> ids) {
         return binaryContentRepository.findAllByIdIn(ids).stream()
                 .map(this::convertToDto)
                 .toList();

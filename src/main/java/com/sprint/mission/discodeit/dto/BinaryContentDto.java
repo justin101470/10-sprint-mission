@@ -2,11 +2,15 @@ package com.sprint.mission.discodeit.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class BinaryContentDto {
-    private final byte[] bytes;
-    private final String fileName;
-    private final String contentType;
+    private  byte[] bytes;
+    private  String fileName;
+    private  String contentType;
 }

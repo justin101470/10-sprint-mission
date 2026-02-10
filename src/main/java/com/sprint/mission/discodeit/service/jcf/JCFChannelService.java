@@ -1,66 +1,77 @@
 package com.sprint.mission.discodeit.service.jcf;
 
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.UserService;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+@Service
+@Primary
 public class JCFChannelService implements ChannelService {
     private final Map<UUID, Channel> data = new HashMap<>();
-    private final UserService userService;
 
-    public JCFChannelService(UserService userService) {
-        this.userService = userService;
+    private ChannelResponseDto convertToDto(Channel c) {
+        return new ChannelResponseDto(
+                c.getId(),
+                c.getName(),
+                c.getDescription(),
+                c.getType(),
+                c.getUpdatedAt(),
+                Collections.emptyList()
+        );
     }
 
-    public Channel create(String name) {
-        Channel channel = new Channel(name);
+    @Override
+    public ChannelResponseDto createPublicChannel(ChannelCreateDto dto) {
+        Channel channel = new Channel(ChannelType.PUBLIC, dto.getName(), dto.getDescription());
         data.put(channel.getId(), channel);
-        return channel;
+        return convertToDto(channel);
     }
 
-    public Channel findById(UUID channelId) {
+    @Override
+    public ChannelResponseDto createPrivateChannel(PrivateChannelCreateDto dto) {
+        Channel channel = new Channel(ChannelType.PRIVATE, "Private Channel", "");
+        data.put(channel.getId(), channel);
+        return convertToDto(channel);
+    }
+
+    @Override
+    public ChannelResponseDto find(UUID channelId) {
         Channel channel = data.get(channelId);
-        if (channel == null) {
-            throw new NoSuchElementException("존재하지 않는 채널입니다. id= " + channelId);
-        }
-        return channel;
+        if (channel == null) throw new NoSuchElementException("채널 없음");
+        return convertToDto(channel);
     }
 
-    public List<Channel> findAll() {
-        return new ArrayList<>(data.values());
+    @Override
+    public List<ChannelResponseDto> findAllByUserId(UUID userId) {
+        return data.values().stream().map(this::convertToDto).toList();
     }
 
-    public Channel update(UUID channelId, String name) {
-        Channel channel = findById(channelId);
-        channel.updateName(name);
-        return channel;
+    @Override
+    public ChannelResponseDto update(ChannelUpdateDto dto) {
+        Channel channel = data.get(dto.getChannelId());
+        if (channel == null) throw new NoSuchElementException("채널 없음");
+        channel.update(dto.getName(), dto.getDescription());
+        return convertToDto(channel);
     }
 
+    @Override
     public void delete(UUID channelId) {
-        findById(channelId);
         data.remove(channelId);
     }
 
-    public void joinChannel(UUID channelId, UUID userId) {
-        Channel channel = findById(channelId);
-        User user = userService.findById(userId);
-        if (channel.getUsers().contains(user)) {
-            throw new IllegalStateException("이미 이 채널에 참여하고 있는 사용자입니다.");
-        }
-        channel.addUser(user);
-        user.addChannel(channel);
+    @Override
+    public ChannelResponseDto create(ChannelCreateDto dto) {
+        return createPublicChannel(dto);
     }
 
-    public void leaveChannel(UUID channelId, UUID userId) {
-        Channel channel = findById(channelId);
-        User user = userService.findById(userId);
-        if (!channel.getUsers().contains(user)) {
-            throw new IllegalArgumentException("해당 채널에 참여한 유저가 아닙니다.");
-        }
-        channel.removeUser(user);
-        user.removeChannel(channel);
+    @Override
+    public List<ChannelResponseDto> findAll() {
+        return data.values().stream().map(this::convertToDto).toList();
     }
 }

@@ -1,65 +1,61 @@
 package com.sprint.mission.discodeit.service.jcf;
 
-import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
-import com.sprint.mission.discodeit.service.UserService;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+@Service
+@Primary
 public class JCFMessageService implements MessageService {
-    private final Map<UUID, Message> data;
-    private final UserService userService;
-    private final ChannelService channelService;
+    private final Map<UUID, Message> data = new HashMap<>();
 
-    public JCFMessageService(UserService userService, ChannelService channelService) {
-        this.userService = userService;
-        this.channelService = channelService;
-        this.data = new HashMap<>();
+    private MessageResponseDto convertToDto(Message m) {
+        return new MessageResponseDto(
+                m.getId(),
+                m.getAuthorId(),
+                m.getChannelId(),
+                m.getContent(),
+                m.getCreatedAt(),
+                m.getAttachmentIds()
+        );
     }
 
-    public Message create(UUID userId, UUID channelId, String content) {
-        User user = userService.findById(userId);
-        Channel channel = channelService.findById(channelId);
-
-        Message message = new Message(user, channel, content);
-
-        user.addMessage(message);
-        user.addChannel(channel);
-        channel.addMessage(message);
-        channel.addUser(user);
-
+    @Override
+    public MessageResponseDto create(MessageCreateDto dto) {
+        Message message = new Message(dto.getSenderId(), dto.getChannelId(), dto.getContent());
         data.put(message.getId(), message);
-        return message;
+        return convertToDto(message);
     }
 
-    public Message findById(UUID messageId) {
-        Message message = data.get(messageId);
-        if (message == null) {
-            throw new IllegalArgumentException("존재하지 않는 메시지입니다.");
-        }
-        return data.get(messageId);
+    @Override
+    public MessageResponseDto find(UUID id) {
+        Message message = data.get(id);
+        if (message == null) throw new NoSuchElementException("메시지 없음");
+        return convertToDto(message);
     }
 
-    public List<Message> findAll() {
-        return new ArrayList<>(data.values());
-    }
-    public List<Message> findMessagesByChannelId(UUID channelId) {
-        Channel channel = channelService.findById(channelId);
-        return channel.getMessages();
-    }
-
-    public Message update(UUID messageId, String content) {
-        Message message = findById(messageId);
-        message.updateContent(content);
-        return message;
+    @Override
+    public List<MessageResponseDto> findallByChannelId(UUID channelId) {
+        return data.values().stream()
+                .filter(m -> m.getChannelId().equals(channelId))
+                .map(this::convertToDto)
+                .toList();
     }
 
-    public void delete(UUID messageId) {
-        findById(messageId);
-        data.remove(messageId);
+    @Override
+    public MessageResponseDto update(MessageUpdateDto dto) {
+        Message message = data.get(dto.getMessageId());
+        if (message == null) throw new NoSuchElementException("메시지 없음");
+        message.updateContent(dto.getContent());
+        return convertToDto(message);
     }
 
+    @Override
+    public void delete(UUID id) {
+        data.remove(id);
+    }
 }

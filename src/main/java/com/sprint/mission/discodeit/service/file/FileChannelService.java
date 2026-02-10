@@ -1,10 +1,15 @@
 package com.sprint.mission.discodeit.service.file;
 
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.service.ChannelService;
+import org.springframework.stereotype.Service;
+
 import java.io.*;
 import java.util.*;
 
+@Service
 public class FileChannelService implements ChannelService {
     private final String FILE_PATH = "channels.dat";
 
@@ -27,39 +32,60 @@ public class FileChannelService implements ChannelService {
         }
     }
 
-    @Override
-    public Channel create(String name) {
-        List<Channel> channels = loadChannels();
-        Channel newChannel = new Channel(name);
-        channels.add(newChannel);
-        saveChannels(channels);
-        return newChannel;
+    private ChannelResponseDto convertToDto(Channel c) {
+        return new ChannelResponseDto(
+                c.getId(),
+                c.getName(),
+                c.getDescription(),
+                c.getType(),
+                c.getUpdatedAt(),
+                Collections.emptyList()
+        );
     }
 
     @Override
-    public Channel findById(UUID channelId) {
-        return loadChannels().stream()
+    public ChannelResponseDto createPublicChannel(ChannelCreateDto dto) {
+        List<Channel> channels = loadChannels();
+        Channel channel = new Channel(ChannelType.PUBLIC, dto.getName(), dto.getDescription());
+        channels.add(channel);
+        saveChannels(channels);
+        return convertToDto(channel);
+    }
+
+    @Override
+    public ChannelResponseDto createPrivateChannel(PrivateChannelCreateDto dto) {
+        List<Channel> channels = loadChannels();
+        Channel channel = new Channel(ChannelType.PRIVATE, "Private Channel", "");
+        channels.add(channel);
+        saveChannels(channels);
+        return convertToDto(channel);
+    }
+
+    @Override
+    public ChannelResponseDto find(UUID channelId) {
+        Channel channel = loadChannels().stream()
                 .filter(c -> c.getId().equals(channelId))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new NoSuchElementException("채널을 찾을 수 없습니다."));
+        return convertToDto(channel);
     }
 
     @Override
-    public List<Channel> findAll() {
-        return loadChannels();
+    public List<ChannelResponseDto> findAllByUserId(UUID userId) {
+        return loadChannels().stream().map(this::convertToDto).toList();
     }
 
     @Override
-    public Channel update(UUID channelId, String name) {
+    public ChannelResponseDto update(ChannelUpdateDto dto) {
         List<Channel> channels = loadChannels();
         for (Channel channel : channels) {
-            if (channel.getId().equals(channelId)) {
-                channel.updateName(name);
+            if (channel.getId().equals(dto.getChannelId())) {
+                channel.update(dto.getName(), dto.getDescription());
                 saveChannels(channels);
-                return channel;
+                return convertToDto(channel);
             }
         }
-        return null;
+        throw new NoSuchElementException("채널 없음");
     }
 
     @Override
@@ -70,24 +96,12 @@ public class FileChannelService implements ChannelService {
     }
 
     @Override
-    public void joinChannel(UUID channelId, UUID userId) {
-        List<Channel> channels = loadChannels();
-        for (Channel channel : channels) {
-            if (channel.getId().equals(channelId)) {
-                saveChannels(channels);
-                return;
-            }
-        }
+    public ChannelResponseDto create(ChannelCreateDto dto) {
+        return createPublicChannel(dto);
     }
 
     @Override
-    public void leaveChannel(UUID channelId, UUID userId) {
-        List<Channel> channels = loadChannels();
-        for (Channel channel : channels) {
-            if (channel.getId().equals(channelId)) {
-                saveChannels(channels);
-                return;
-            }
-        }
+    public List<ChannelResponseDto> findAll() {
+        return loadChannels().stream().map(this::convertToDto).toList();
     }
 }

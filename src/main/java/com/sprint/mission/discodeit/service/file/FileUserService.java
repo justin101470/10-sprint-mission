@@ -1,11 +1,14 @@
 package com.sprint.mission.discodeit.service.file;
 
-import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.service.UserService;
+import org.springframework.stereotype.Service;
+
 import java.io.*;
 import java.util.*;
 
+@Service
 public class FileUserService implements UserService {
     private final String FILE_PATH = "users.dat";
 
@@ -28,39 +31,46 @@ public class FileUserService implements UserService {
         }
     }
 
+    private UserResponseDto convertToDto(User user) {
+        return new UserResponseDto(user, false);
+    }
+
     @Override
-    public User create(String username) {
+    public UserResponseDto create(UserCreateDto dto) {
         List<User> users = loadUsers();
-        User newUser = new User(username);
+        User newUser = new User(dto.getUsername(), dto.getEmail(), dto.getPassword());
         users.add(newUser);
         saveUsers(users);
-        return newUser;
+        return convertToDto(newUser);
     }
 
     @Override
-    public User findById(UUID userId) {
-        return loadUsers().stream()
+    public UserResponseDto find(UUID userId) {
+        User user = loadUsers().stream()
                 .filter(u -> u.getId().equals(userId))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
+        return convertToDto(user);
     }
 
     @Override
-    public List<User> findAll() {
-        return loadUsers();
+    public List<UserResponseDto> findAll() {
+        return loadUsers().stream()
+                .map(this::convertToDto)
+                .toList();
     }
 
     @Override
-    public User update(UUID userId, String username) {
+    public UserResponseDto update(UUID userId, UserUpdateDto dto) {
         List<User> users = loadUsers();
         for (User user : users) {
             if (user.getId().equals(userId)) {
-                user.updateUsername(username);
+                user.update(dto.getNickname(), null, dto.getPassword());
                 saveUsers(users);
-                return user;
+                return convertToDto(user);
             }
         }
-        return null;
+        throw new NoSuchElementException("수정할 유저가 없습니다.");
     }
 
     @Override
@@ -71,21 +81,6 @@ public class FileUserService implements UserService {
     }
 
     @Override
-    public List<User> findUsersByChannelId(UUID channelId) {
-        List<User> result = new ArrayList<>();
-        for (User user : loadUsers()) {
-            boolean isParticipant = user.getChannels().stream()
-                    .anyMatch(c -> c.getId().equals(channelId));
-            if (isParticipant) {
-                result.add(user);
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public List<Message> findMessagesByUserId(UUID userId) {
-        User user = findById(userId);
-        return (user != null) ? user.getMessages() : new ArrayList<>();
+    public void updateStatus(UserStatusUpdateDto dto) {
     }
 }

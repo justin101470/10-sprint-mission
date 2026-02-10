@@ -1,67 +1,64 @@
 package com.sprint.mission.discodeit.service.jcf;
 
-import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.UserService;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+@Service
+@Primary
 public class JCFUserService implements UserService {
     private final Map<UUID, User> data = new HashMap<>();
-    private ChannelService channelService;
 
-    public void setChannelService(ChannelService channelService) {
-        this.channelService = channelService;
-    }
-
-    public JCFUserService() {
+    private UserResponseDto convertToDto(User user) {
+        return new UserResponseDto(user, false);
     }
 
     @Override
-    public User create(String username) {
-        User user = new User(username);
-        data.put(user.getId(), user);
-        return user;
-    }
+    public UserResponseDto create(UserCreateDto dto) {
+        try {
+            User user = new User(dto.getUsername(), dto.getEmail(), dto.getPassword());
 
-    @Override
-    public User findById(UUID userId) {
-        User user = data.get(userId);
-        if (user == null) {
-            throw new IllegalArgumentException("존재하지 않는 사용자입니다.");
+            data.put(user.getId(), user);
+
+            return convertToDto(user);
+
+        } catch (Exception e) {
+            System.err.println("=== 긴급: 유저 생성 중 에러 발생! ===");
+            e.printStackTrace();
+            throw e;
         }
-        return user;
     }
 
     @Override
-    public List<User> findAll() {
-        return new ArrayList<>(data.values());
+    public UserResponseDto find(UUID userId) {
+        User user = data.get(userId);
+        if (user == null) throw new NoSuchElementException("사용자 없음");
+        return convertToDto(user);
     }
 
     @Override
-    public User update(UUID userId, String username) {
-        User user = findById(userId);
-        user.updateUsername(username);
-        return user;
+    public List<UserResponseDto> findAll() {
+        return data.values().stream().map(this::convertToDto).toList();
+    }
+
+    @Override
+    public UserResponseDto update(UUID userId, UserUpdateDto dto) {
+        User user = data.get(userId);
+        if (user == null) throw new NoSuchElementException("사용자 없음");
+        user.update(dto.getNickname(), null, dto.getPassword());
+        return convertToDto(user);
     }
 
     @Override
     public void delete(UUID userId) {
-        findById(userId);
         data.remove(userId);
     }
 
     @Override
-    public List<User> findUsersByChannelId(UUID channelId) {
-        Channel channel = channelService.findById(channelId);
-        return new ArrayList<>(channel.getUsers());
-    }
-
-    @Override
-    public List<Message> findMessagesByUserId(UUID userId) {
-        User user = findById(userId);
-        return new ArrayList<>(user.getMessages());
+    public void updateStatus(UserStatusUpdateDto dto) {
     }
 }

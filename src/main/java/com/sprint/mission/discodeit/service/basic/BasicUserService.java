@@ -117,4 +117,14 @@ public class BasicUserService implements UserService {
         userStatusRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);
     }
+
+    @Override
+    public void updateStatus(UserStatusUpdateDto dto) {
+        UserStatus status = userStatusRepository.findByUserId(dto.getUserId())
+                .orElseThrow(() -> new NoSuchElementException("유저 상태 정보를 찾을 수 없습니다."));
+
+        status.updateStatus();
+
+        userStatusRepository.save(status);
+    }
 }

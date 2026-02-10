@@ -1,17 +1,16 @@
 package com.sprint.mission.discodeit.service.file;
 
-import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.service.MessageService;
+import org.springframework.stereotype.Service;
+
 import java.io.*;
 import java.util.*;
 
+@Service
 public class FileMessageService implements MessageService {
     private final String FILE_PATH = "messages.dat";
-
-    private final FileUserService userService = new FileUserService();
-    private final FileChannelService channelService = new FileChannelService();
 
     @SuppressWarnings("unchecked")
     private List<Message> loadMessages() {
@@ -32,65 +31,61 @@ public class FileMessageService implements MessageService {
         }
     }
 
+    private MessageResponseDto convertToDto(Message m) {
+        return new MessageResponseDto(
+                m.getId(),
+                m.getAuthorId(),
+                m.getChannelId(),
+                m.getContent(),
+                m.getCreatedAt(),
+                m.getAttachmentIds()
+        );
+    }
+
     @Override
-    public Message create(UUID userId, UUID channelId, String content) {
+    public MessageResponseDto create(MessageCreateDto dto) {
         List<Message> messages = loadMessages();
-
-        User author = userService.findById(userId);
-        Channel channel = channelService.findById(channelId);
-
-        if (author == null || channel == null) {
-            throw new IllegalArgumentException("존재하지 않는 유저 또는 채널입니다.");
-        }
-
-        Message newMessage = new Message(author, channel, content);
+        Message newMessage = new Message(dto.getSenderId(), dto.getChannelId(), dto.getContent());
 
         messages.add(newMessage);
         saveMessages(messages);
-        return newMessage;
+        return convertToDto(newMessage);
     }
 
     @Override
-    public Message findById(UUID messageId) {
-        return loadMessages().stream()
-                .filter(m -> m.getId().equals(messageId))
+    public MessageResponseDto find(UUID id) {
+        Message message = loadMessages().stream()
+                .filter(m -> m.getId().equals(id))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new NoSuchElementException("메시지를 찾을 수 없습니다."));
+        return convertToDto(message);
     }
 
     @Override
-    public List<Message> findAll() {
-        return loadMessages();
+    public List<MessageResponseDto> findallByChannelId(UUID channelId) {
+        return loadMessages().stream()
+                .filter(m -> m.getChannelId().equals(channelId))
+                .map(this::convertToDto)
+                .toList();
     }
 
     @Override
-    public Message update(UUID messageId, String content) {
+    public MessageResponseDto update(MessageUpdateDto dto) {
         List<Message> messages = loadMessages();
         for (Message message : messages) {
-            if (message.getId().equals(messageId)) {
-                message.updateContent(content);
+            if (message.getId().equals(dto.getMessageId())) {
+                message.updateContent(dto.getContent());
                 saveMessages(messages);
-                return message;
+                return convertToDto(message);
             }
         }
-        return null;
+        throw new NoSuchElementException("수정할 메시지가 없습니다.");
     }
 
     @Override
-    public void delete(UUID messageId) {
+    public void delete(UUID id) {
         List<Message> messages = loadMessages();
-        messages.removeIf(m -> m.getId().equals(messageId));
+        messages.removeIf(m -> m.getId().equals(id));
         saveMessages(messages);
-    }
-
-    @Override
-    public List<Message> findMessagesByChannelId(UUID channelId) {
-        List<Message> result = new ArrayList<>();
-        for (Message message : loadMessages()) {
-            if (message.getChannel().getId().equals(channelId)) {
-                result.add(message);
-            }
-        }
-        return result;
     }
 }
