@@ -27,7 +27,7 @@ public class UserController {
     //사용자 정보 수정
     @RequestMapping(value = "/update", method = RequestMethod.POST)
     public ResponseEntity<UserResponseDto> update(
-            @RequestBody UUID id,
+            @RequestParam UUID id,
             @RequestBody UserUpdateDto dto
     ) {
         return ResponseEntity.ok(userService.update(id, dto));
@@ -49,6 +49,7 @@ public class UserController {
     // 사용자 온라인 상태 업데이트
     @RequestMapping(value = "/status/update", method = RequestMethod.POST)
     public ResponseEntity<Void> updateStatus(@RequestBody UserStatusUpdateDto dto) {
+        userService.updateStatus(dto);
         return ResponseEntity.ok().build();
     }
 }

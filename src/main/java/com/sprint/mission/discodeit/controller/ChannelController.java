@@ -40,7 +40,7 @@ public class ChannelController {
     }
 
     //특정 사용자가 볼 수 있는 모든 채널 목록을 조회할 수 있다.
-    @RequestMapping(value = "list", method = RequestMethod.GET)
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<List<ChannelResponseDto>> findAllByMemberId(@RequestParam UUID memberId) {
         return ResponseEntity.ok(channelService.findAllByUserId(memberId));
     }

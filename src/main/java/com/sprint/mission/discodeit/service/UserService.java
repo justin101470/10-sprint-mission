@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.service;
 
 import com.sprint.mission.discodeit.dto.UserResponseDto;
 import com.sprint.mission.discodeit.dto.UserCreateDto;
+import com.sprint.mission.discodeit.dto.UserStatusUpdateDto;
 import com.sprint.mission.discodeit.dto.UserUpdateDto;
 
 import java.util.List;
@@ -14,4 +15,5 @@ public interface UserService {
     List<UserResponseDto> findAll();
     UserResponseDto update(UUID userId, UserUpdateDto dto);
     void delete(UUID userId);
+    void updateStatus(UserStatusUpdateDto dto);
 }

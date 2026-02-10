@@ -25,7 +25,7 @@ public class BinaryContentController {
     }
 
     //바이너리 파일 여러 개 조회
-    @RequestMapping(value = "/List", method = RequestMethod.GET)
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<List<BinaryContentResponseDto>> findAll(@RequestParam List<UUID> ids) {
         return ResponseEntity.ok(binaryContentService.findAllByIds(ids));
     }
