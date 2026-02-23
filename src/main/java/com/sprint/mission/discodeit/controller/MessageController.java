@@ -12,33 +12,30 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/message")
+@RequestMapping("/api/messages")
 @RequiredArgsConstructor
 public class MessageController {
-    private final MessageService messageService;
 
-    //메세지 전송
-    @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public ResponseEntity<MessageResponseDto> create(@RequestBody MessageCreateDto dto) {
-        return ResponseEntity.ok(messageService.create(dto));
-    }
+  private final MessageService messageService;
 
-    //메세지 수정
-    @RequestMapping(value = "/update", method = RequestMethod.POST)
-    public ResponseEntity<MessageResponseDto> update(@RequestBody MessageUpdateDto dto) {
-        return ResponseEntity.ok(messageService.update(dto));
-    }
+  @PostMapping
+  public ResponseEntity<MessageResponseDto> create(@RequestBody MessageCreateDto dto) {
+    return ResponseEntity.ok(messageService.create(dto));
+  }
 
-    //메세지 삭제
-    @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public ResponseEntity<Void> delete(@RequestParam UUID id) {
-        messageService.delete(id);
-        return ResponseEntity.ok().build();
-    }
+  @GetMapping
+  public ResponseEntity<List<MessageResponseDto>> findallByChannelId(@RequestParam UUID channelId) {
+    return ResponseEntity.ok(messageService.findallByChannelId(channelId));
+  }
 
-    //특정 채널의 메시지 목록을 조회할 수 있다.
-    @RequestMapping(value = "list", method = RequestMethod.GET)
-    public ResponseEntity<List<MessageResponseDto>> findAllByChannelId(@RequestParam UUID channelId) {
-        return ResponseEntity.ok(messageService.findallByChannelId(channelId));
-    }
+  @PatchMapping
+  public ResponseEntity<MessageResponseDto> update(@RequestBody MessageUpdateDto dto) {
+    return ResponseEntity.ok(messageService.update(dto));
+  }
+
+  @DeleteMapping("/{messageId}")
+  public ResponseEntity<Void> delete(@PathVariable UUID messageId) {
+    messageService.delete(messageId);
+    return ResponseEntity.noContent().build();
+  }
 }

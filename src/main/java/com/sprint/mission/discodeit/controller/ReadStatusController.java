@@ -12,24 +12,24 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/read-status")
+@RequestMapping("/api/read-statuses")
 @RequiredArgsConstructor
 public class ReadStatusController {
-    private final ReadStatusService readStatusService;
 
-    //특정 채널의 메시지 수신 정보를 생성할 수 있다.
-    @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public ResponseEntity<ReadStatusResponseDto> create(@RequestBody ReadStatusCreateDto dto) {
-        return ResponseEntity.ok(readStatusService.create(dto));
-    }
-    //특정 채널의 메시지 수신 정보를 수정할 수 있다.
-    @RequestMapping(value = "/update", method = RequestMethod.POST)
-    public ResponseEntity<ReadStatusResponseDto> update(@RequestBody ReadStatusUpdateDto dto) {
-        return ResponseEntity.ok(readStatusService.update(dto));
-    }
-    //특정 사용자의 메시지 수신 정보를 조회할 수 있다.
-    @RequestMapping(value = "/list", method = RequestMethod.GET)
-    public ResponseEntity<List<ReadStatusResponseDto>> findAllByUserId(@RequestParam UUID userId) {
-        return ResponseEntity.ok(readStatusService.findAllByUserId(userId));
-    }
+  private final ReadStatusService readStatusService;
+
+  @PostMapping
+  public ResponseEntity<ReadStatusResponseDto> create(@RequestBody ReadStatusCreateDto dto) {
+    return ResponseEntity.ok(readStatusService.create(dto));
+  }
+
+  @PatchMapping("/{readStatusId}")
+  public ResponseEntity<ReadStatusResponseDto> update(@RequestBody ReadStatusUpdateDto dto) {
+    return ResponseEntity.ok(readStatusService.update(dto));
+  }
+
+  @GetMapping
+  public ResponseEntity<List<ReadStatusResponseDto>> findAllByUserId(@RequestParam UUID userId) {
+    return ResponseEntity.ok(readStatusService.findAllByUserId(userId));
+  }
 }
