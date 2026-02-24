@@ -14,117 +14,130 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
 
-    private final UserRepository userRepository;
-    private final UserStatusRepository userStatusRepository;
-    private final BinaryContentRepository binaryContentRepository;
+  private final UserRepository userRepository;
+  private final UserStatusRepository userStatusRepository;
+  private final BinaryContentRepository binaryContentRepository;
 
-    @Override
-    public UserResponseDto create(UserCreateDto dto) {
-        if (userRepository.existsByUsername(dto.getUsername()) ||
-                userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("중복된 사용자 정보가 존재합니다.");
-        }
-
-        UUID profileId = null;
-        BinaryContentDto imageDto = dto.getProfileImage();
-
-        if (imageDto != null && imageDto.getBytes() != null) {
-            BinaryContent content = new BinaryContent(
-                    imageDto.getBytes(),
-                    imageDto.getFileName(),
-                    imageDto.getContentType()
-            );
-            binaryContentRepository.save(content);
-            profileId = content.getId();
-        }
-
-        User user = new User(dto.getUsername(), dto.getEmail(), dto.getPassword());
-        user.updateProfileId(profileId);
-        userRepository.save(user);
-
-        userStatusRepository.save(new UserStatus(user.getId()));
-
-        return new UserResponseDto(user, false);
+  @Override
+  public UserResponseDto create(UserCreateDto dto, MultipartFile profileImage) {
+    if (userRepository.existsByUsername(dto.getUsername()) ||
+        userRepository.existsByEmail(dto.getEmail())) {
+      throw new IllegalArgumentException("중복된 사용자 정보가 존재합니다.");
     }
 
-    @Override
-    public UserResponseDto find(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
-
-        boolean isOnline = userStatusRepository.findByUserId(userId)
-                .map(UserStatus::isOnline)
-                .orElse(false);
-
-        return new UserResponseDto(user, isOnline);
+    UUID profileId = null;
+    if (profileImage != null && !profileImage.isEmpty()) {
+      try {
+        BinaryContent content = new BinaryContent(
+            profileImage.getBytes(),
+            profileImage.getOriginalFilename(),
+            profileImage.getContentType()
+        );
+        binaryContentRepository.save(content);
+        profileId = content.getId();
+      } catch (java.io.IOException e) {
+        throw new RuntimeException("프로필 이미지 저장 실패", e);
+      }
     }
 
-    @Override
-    public List<UserResponseDto> findAll() {
-        return userRepository.findAll().stream()
-                .map(user -> {
-                    boolean isOnline = userStatusRepository.findByUserId(user.getId())
-                            .map(UserStatus::isOnline)
-                            .orElse(false);
-                    return new UserResponseDto(user, isOnline);
-                })
-                .toList();
+    User user = new User(dto.getUsername(), dto.getEmail(), dto.getPassword());
+    user.updateProfileId(profileId);
+    userRepository.save(user);
+
+    userStatusRepository.save(new UserStatus(user.getId()));
+
+    return new UserResponseDto(user, false);
+  }
+
+  @Override
+  public UserResponseDto find(UUID userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
+
+    boolean isOnline = userStatusRepository.findByUserId(userId)
+        .map(UserStatus::isOnline)
+        .orElse(false);
+
+    return new UserResponseDto(user, isOnline);
+  }
+
+  @Override
+  public List<UserResponseDto> findAll() {
+    return userRepository.findAll().stream()
+        .map(user -> {
+          boolean isOnline = userStatusRepository.findByUserId(user.getId())
+              .map(UserStatus::isOnline)
+              .orElse(false);
+          return new UserResponseDto(user, isOnline);
+        })
+        .toList();
+  }
+
+  @Override
+  public UserResponseDto update(UUID userId, UserUpdateDto dto, MultipartFile profileImage) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
+
+    user.update(dto.getNickname(), null, dto.getPassword());
+
+    if (profileImage != null && !profileImage.isEmpty()) {
+      if (user.getProfileId() != null) {
+        binaryContentRepository.deleteById(user.getProfileId());
+      }
+      try {
+        BinaryContent newContent = new BinaryContent(
+            profileImage.getBytes(),
+            profileImage.getOriginalFilename(),
+            profileImage.getContentType()
+        );
+        binaryContentRepository.save(newContent);
+        user.updateProfileId(newContent.getId());
+      } catch (java.io.IOException e) {
+        throw new RuntimeException("프로필 이미지 수정 실패", e);
+      }
     }
 
-    @Override
-    public UserResponseDto update(UUID userId, UserUpdateDto dto) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
+    userRepository.save(user);
 
-        user.update(dto.getNickname(), null, dto.getPassword());
+    boolean isOnline = userStatusRepository.findByUserId(userId)
+        .map(UserStatus::isOnline)
+        .orElse(false);
 
-        BinaryContentDto imageDto = dto.getProfileImage();
-        if (imageDto != null && imageDto.getBytes() != null) {
-            if (user.getProfileId() != null) {
-                binaryContentRepository.deleteById(user.getProfileId());
-            }
-            BinaryContent newContent = new BinaryContent(
-                    imageDto.getBytes(),
-                    imageDto.getFileName(),
-                    imageDto.getContentType()
-            );
-            binaryContentRepository.save(newContent);
-            user.updateProfileId(newContent.getId());
-        }
+    return new UserResponseDto(user, isOnline);
+  }
 
-        userRepository.save(user);
+  @Override
+  public void delete(UUID userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
 
-        boolean isOnline = userStatusRepository.findByUserId(userId)
-                .map(UserStatus::isOnline)
-                .orElse(false);
-
-        return new UserResponseDto(user, isOnline);
+    if (user.getProfileId() != null) {
+      binaryContentRepository.deleteById(user.getProfileId());
     }
+    userStatusRepository.deleteByUserId(userId);
+    userRepository.deleteById(userId);
+  }
 
-    @Override
-    public void delete(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
-
-        if (user.getProfileId() != null) {
-            binaryContentRepository.deleteById(user.getProfileId());
-        }
-        userStatusRepository.deleteByUserId(userId);
-        userRepository.deleteById(userId);
+  @Override
+  public UserResponseDto updateStatus(UUID userId) {
+    UserStatus status = userStatusRepository.findByUserId(userId)
+        .orElseThrow(() -> new NoSuchElementException("유저 상태 정보를 찾을 수 없습니다."));
+    if (status.isOnline()) {
+      status.setOffline();
+    } else {
+      status.setOnline();
     }
+    userStatusRepository.save(status);
 
-    @Override
-    public void updateStatus(UserStatusUpdateDto dto) {
-        UserStatus status = userStatusRepository.findByUserId(dto.getUserId())
-                .orElseThrow(() -> new NoSuchElementException("유저 상태 정보를 찾을 수 없습니다."));
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("유저를 찾을 수 없습니다."));
 
-        status.updateStatus();
-
-        userStatusRepository.save(status);
-    }
+    return new UserResponseDto(user, status.isOnline());
+  }
 }

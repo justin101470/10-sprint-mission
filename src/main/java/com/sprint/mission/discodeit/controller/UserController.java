@@ -4,11 +4,13 @@ import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -17,10 +19,12 @@ public class UserController {
 
   private final UserService userService;
 
-  @PostMapping
-  public ResponseEntity<UserResponseDto> create(@RequestBody UserCreateDto dto) {
-    // userService.signUp -> create로 변경
-    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(dto));
+  @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+  public ResponseEntity<UserResponseDto> create(
+      @RequestPart("dto") UserCreateDto dto,
+      @RequestPart(value = "profileImage", required = false) MultipartFile profileImage // 파일 데이터
+  ) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(dto, profileImage));
   }
 
   @GetMapping
@@ -28,13 +32,13 @@ public class UserController {
     return ResponseEntity.ok(userService.findAll());
   }
 
-  @PatchMapping("/{userId}")
+  @PatchMapping(value = "/{userId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
   public ResponseEntity<UserResponseDto> update(
       @PathVariable UUID userId,
-      @RequestBody UserUpdateDto dto
+      @RequestPart("dto") UserUpdateDto dto,
+      @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
   ) {
-    // 파라미터 2개(userId, dto)를 넘기도록 수정
-    return ResponseEntity.ok(userService.update(userId, dto));
+    return ResponseEntity.ok(userService.update(userId, dto, profileImage));
   }
 
   @DeleteMapping("/{userId}")
@@ -44,9 +48,7 @@ public class UserController {
   }
 
   @PatchMapping("/{userId}/userStatus")
-  public ResponseEntity<Void> updateStatus(@RequestBody UserStatusUpdateDto dto) {
-    // 서비스 반환 타입 void에 맞춰 수정
-    userService.updateStatus(dto);
-    return ResponseEntity.ok().build();
+  public ResponseEntity<UserResponseDto> updateStatus(@PathVariable UUID userId) {
+    return ResponseEntity.ok(userService.updateStatus(userId));
   }
 }

@@ -10,10 +10,12 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 public class MessageResponseDto {
-    private final UUID id;
-    private final UUID senderId;
-    private final UUID channelId;
-    private final String content;
-    private final Instant createdAt;
-    private final List<UUID> attachmentIds;
+
+  private final UUID id;
+  private final UUID authorId;
+  private final UUID channelId;
+  private final String content;
+  private final Instant createdAt;
+  private final Instant updatedAt;
+  private final List<UUID> attachmentIds;
 }

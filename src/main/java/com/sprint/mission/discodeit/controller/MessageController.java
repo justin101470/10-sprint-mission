@@ -5,11 +5,14 @@ import com.sprint.mission.discodeit.dto.MessageResponseDto;
 import com.sprint.mission.discodeit.dto.MessageUpdateDto;
 import com.sprint.mission.discodeit.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -18,9 +21,20 @@ public class MessageController {
 
   private final MessageService messageService;
 
-  @PostMapping
-  public ResponseEntity<MessageResponseDto> create(@RequestBody MessageCreateDto dto) {
-    return ResponseEntity.ok(messageService.create(dto));
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<MessageResponseDto> create(
+      @RequestPart("data") MessageCreateDto dto,
+      @RequestPart(value = "files", required = false) List<MultipartFile> files
+  ) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(messageService.create(dto, files));
+  }
+
+  @PatchMapping("/{messageId}")
+  public ResponseEntity<MessageResponseDto> update(
+      @PathVariable UUID messageId,
+      @RequestBody MessageUpdateDto dto
+  ) {
+    return ResponseEntity.ok(messageService.update(messageId, dto));
   }
 
   @GetMapping
@@ -28,10 +42,6 @@ public class MessageController {
     return ResponseEntity.ok(messageService.findallByChannelId(channelId));
   }
 
-  @PatchMapping
-  public ResponseEntity<MessageResponseDto> update(@RequestBody MessageUpdateDto dto) {
-    return ResponseEntity.ok(messageService.update(dto));
-  }
 
   @DeleteMapping("/{messageId}")
   public ResponseEntity<Void> delete(@PathVariable UUID messageId) {

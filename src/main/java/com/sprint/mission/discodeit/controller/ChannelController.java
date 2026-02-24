@@ -37,9 +37,12 @@ public class ChannelController {
     return ResponseEntity.ok(channelService.findAllByUserId(userId));
   }
 
-  @PatchMapping
-  public ResponseEntity<ChannelResponseDto> update(@RequestBody ChannelUpdateDto dto) {
-    return ResponseEntity.ok(channelService.update(dto));
+  @PatchMapping("/{channelId}")
+  public ResponseEntity<ChannelResponseDto> update(
+      @PathVariable UUID channelId,
+      @RequestBody ChannelUpdateDto dto
+  ) {
+    return ResponseEntity.ok(channelService.update(channelId, dto));
   }
 
   @DeleteMapping("/{channelId}")

@@ -11,10 +11,13 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 public class ChannelResponseDto {
-    private final UUID id;
-    private final String name;
-    private final String description;
-    private final ChannelType type;
-    private final Instant lastMessageAt;
-    private final List<UUID> memberIds;
+
+  private final UUID id;
+  private final String name;
+  private final String description;
+  private final ChannelType type;
+  private final Instant lastMessageAt;
+  private final List<UUID> participantIds;
+  private final Instant createdAt;
+  private final Instant updatedAt;
 }
